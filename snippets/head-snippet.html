@@ -1,0 +1,26 @@
+<!-- ============================================================
+     STEP 2 of 2 — paste this into your code plugin as an
+     HTML snippet, location: "Site Wide Header" (inside <head>).
+     This is what makes the site actually INSTALLABLE on Android.
+     Without it, Android shows only "Add to Home screen" shortcut
+     instructions instead of a real one-tap install button.
+     ============================================================ -->
+
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0d7a4f">
+
+<!-- iOS / Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tax Calculator">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon-180.png">
+
+<script>
+  // Register the service worker (required for a real Android install prompt).
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .catch(function (err) { console.warn('SW registration failed:', err); });
+    });
+  }
+</script>
