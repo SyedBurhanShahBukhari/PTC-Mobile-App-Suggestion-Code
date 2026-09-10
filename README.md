@@ -95,6 +95,20 @@ Paste `snippets/head-snippet.html`.
 Code plugin → new **HTML** snippet → location **Site Wide Footer**.
 Paste `snippets/install-banner-snippet.html`. Done.
 
+### Not on WordPress?
+
+The snippets are plain HTML — nothing is WordPress-specific.
+
+- **Static HTML site:** put the head snippet in `<head>` and the banner snippet
+  before `</body>` on every page (or in your include/partial).
+- **Next.js:** drop `manifest.webmanifest`, `sw.js`, `offline.html` and
+  `assets/icons/` into `public/`. Put the head tags in your root layout's
+  `<head>` (or `app/manifest.ts`), and load the banner script with
+  `<Script src="/install-banner.js" strategy="afterInteractive" />` after
+  splitting the `<script>` body out into `public/install-banner.js`.
+- **Shopify / Wix / Squarespace:** use the "custom code / header & footer
+  injection" panel the same way as the code plugin above.
+
 ### Step 4 — replace the placeholder icons
 
 The included icons are a plain green "PTC" placeholder. Export your real logo
