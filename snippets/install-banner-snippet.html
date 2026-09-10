@@ -1,0 +1,376 @@
+<!-- ============================================================
+     Pak Tax Calculator — "Install our app" prompt for mobile
+     Paste this WHOLE block into your code plugin (WPCode /
+     Code Snippets / Insert Headers and Footers) as an
+     HTML snippet, location: "Site Wide Footer" / before </body>.
+     No build step, no dependencies, no external files.
+     Edit the CONFIG block below and you are done.
+     ============================================================ -->
+
+<style>
+  .ptc-ip, .ptc-ip * { box-sizing: border-box; }
+
+  /* ---- bottom bar (deliberately small: a full-screen popup on a
+         page arriving from Google search is an "intrusive
+         interstitial" and can cost you rankings) ---- */
+  .ptc-ip {
+    position: fixed;
+    left: 12px; right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: #ffffff;
+    color: #10221a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .22), 0 2px 8px rgba(0, 0, 0, .12);
+    font: 400 14px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    transform: translateY(160%);
+    opacity: 0;
+    transition: transform .38s cubic-bezier(.22, 1, .36, 1), opacity .28s ease;
+    will-change: transform;
+  }
+  .ptc-ip[data-open="1"] { transform: translateY(0); opacity: 1; }
+
+  .ptc-ip__icon {
+    width: 46px; height: 46px; flex: 0 0 46px;
+    border-radius: 12px; object-fit: cover;
+    background: #0d7a4f;
+  }
+  .ptc-ip__text { min-width: 0; flex: 1 1 auto; }
+  .ptc-ip__title {
+    margin: 0 0 2px; font-size: 14.5px; font-weight: 700; color: #10221a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ptc-ip__sub {
+    margin: 0; font-size: 12.5px; color: #5b6b64;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ptc-ip__cta {
+    flex: 0 0 auto;
+    appearance: none; border: 0; cursor: pointer;
+    padding: 10px 16px; border-radius: 999px;
+    background: #0d7a4f; color: #fff;
+    font: 700 13.5px/1 inherit; letter-spacing: .01em;
+    min-height: 40px;
+  }
+  .ptc-ip__cta:active { transform: scale(.97); }
+
+  .ptc-ip__close {
+    position: absolute; top: -10px; right: -6px;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 0; cursor: pointer;
+    background: #10221a; color: #fff;
+    font: 400 16px/1 inherit;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  }
+
+  /* ---- iOS "Add to Home Screen" sheet (Safari has no install API) ---- */
+  .ptc-ip-sheet {
+    position: fixed; inset: 0; z-index: 2147483001;
+    display: flex; align-items: flex-end; justify-content: center;
+    background: rgba(6, 20, 14, .5);
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+    font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .ptc-ip-sheet[data-open="1"] { opacity: 1; pointer-events: auto; }
+  .ptc-ip-sheet__panel {
+    width: 100%; max-width: 460px;
+    background: #fff; color: #10221a;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(20px); transition: transform .3s cubic-bezier(.22, 1, .36, 1);
+  }
+  .ptc-ip-sheet[data-open="1"] .ptc-ip-sheet__panel { transform: translateY(0); }
+  .ptc-ip-sheet h3 { margin: 0 0 4px; font-size: 17px; }
+  .ptc-ip-sheet p  { margin: 0 0 16px; font-size: 13.5px; color: #5b6b64; }
+  .ptc-ip-sheet ol { margin: 0; padding-left: 20px; }
+  .ptc-ip-sheet li { margin-bottom: 10px; }
+  .ptc-ip-sheet svg { vertical-align: -4px; }
+  .ptc-ip-sheet__done {
+    margin-top: 18px; width: 100%; min-height: 46px;
+    border: 0; border-radius: 12px; cursor: pointer;
+    background: #f0f3f1; color: #10221a; font: 600 14px/1 inherit;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .ptc-ip, .ptc-ip-sheet__panel { background: #16211d; color: #eef4f1; }
+    .ptc-ip__title { color: #eef4f1; }
+    .ptc-ip__sub, .ptc-ip-sheet p { color: #9fb2aa; }
+    .ptc-ip-sheet h3 { color: #eef4f1; }
+    .ptc-ip__close { background: #eef4f1; color: #16211d; }
+    .ptc-ip-sheet__done { background: #24322c; color: #eef4f1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ptc-ip, .ptc-ip-sheet, .ptc-ip-sheet__panel { transition: none; }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================  CONFIG  ========================== */
+  var CONFIG = {
+    appName:        'Pak Tax Calculator',
+    tagline:        'Install the app — faster salary & income tax calculations, works offline.',
+    buttonLabel:    'Install',
+    iconUrl:        '/assets/icons/icon-192.png',  // <-- your logo, 192x192 PNG
+
+    showOnDesktop:  false,   // mobile only (your GSC: ~67% of clicks are mobile)
+    minVisits:      2,       // don't ask on the very first pageview from Google
+    showAfterSeconds: 20,    // let them actually use the calculator first
+    dismissDaysBackoff: [14, 45, 400], // 1st "not now" = 14 days, 2nd = 45, 3rd = never
+    debug:          false    // true = ignore all gates, show immediately
+  };
+  /* ============================================================== */
+
+  var LS = {
+    visits:    'ptc_ip_visits',
+    dismissed: 'ptc_ip_dismissed_until',
+    dismissN:  'ptc_ip_dismiss_count',
+    installed: 'ptc_ip_installed'
+  };
+
+  function get(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function track(action) {
+    try {
+      if (typeof gtag === 'function') {
+        gtag('event', 'pwa_install_prompt', { action: action });
+      }
+      if (Array.isArray(window.dataLayer)) {
+        window.dataLayer.push({ event: 'pwa_install_prompt', action: action });
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- environment detection ---------- */
+  var ua = navigator.userAgent || '';
+
+  var isStandalone =
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true ||
+    document.referrer.indexOf('android-app://') === 0;
+
+  var isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 13+
+
+  // Chrome/Firefox/Edge on iOS cannot add to home screen — only Safari can.
+  var isIOSSafari = isIOS && !/CriOS|FxiOS|EdgiOS|OPiOS|Mercury/.test(ua);
+
+  var isMobile =
+    isIOS || /Android/.test(ua) ||
+    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && screen.width < 1024);
+
+  var deferredPrompt = null;   // the Android/Chrome native install event
+  var bar = null, sheet = null, shown = false;
+
+  /* ---------- gating ---------- */
+  function bumpVisits() {
+    var n = parseInt(get(LS.visits) || '0', 10) + 1;
+    set(LS.visits, String(n));
+    return n;
+  }
+
+  function allowedToShow() {
+    if (CONFIG.debug) return true;
+    if (isStandalone) return false;                     // already installed
+    if (get(LS.installed) === '1') return false;
+    if (!CONFIG.showOnDesktop && !isMobile) return false;
+
+    var until = parseInt(get(LS.dismissed) || '0', 10);
+    if (until && Date.now() < until) return false;      // inside the snooze window
+
+    return parseInt(get(LS.visits) || '0', 10) >= CONFIG.minVisits;
+  }
+
+  function snooze() {
+    var n = parseInt(get(LS.dismissN) || '0', 10);
+    var days = CONFIG.dismissDaysBackoff[Math.min(n, CONFIG.dismissDaysBackoff.length - 1)];
+    set(LS.dismissN, String(n + 1));
+    set(LS.dismissed, String(Date.now() + days * 864e5));
+  }
+
+  /* ---------- the bottom bar ---------- */
+  function buildBar() {
+    if (bar) return bar;
+
+    bar = document.createElement('div');
+    bar.className = 'ptc-ip';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Install ' + CONFIG.appName);
+
+    var icon = '<img class="ptc-ip__icon" src="' + CONFIG.iconUrl + '" alt="" ' +
+               'onerror="this.style.visibility=\'hidden\'">';
+
+    bar.innerHTML =
+      icon +
+      '<div class="ptc-ip__text">' +
+        '<p class="ptc-ip__title">' + CONFIG.appName + '</p>' +
+        '<p class="ptc-ip__sub">' + CONFIG.tagline + '</p>' +
+      '</div>' +
+      '<button type="button" class="ptc-ip__cta">' + CONFIG.buttonLabel + '</button>' +
+      '<button type="button" class="ptc-ip__close" aria-label="Not now">&times;</button>';
+
+    bar.querySelector('.ptc-ip__cta').addEventListener('click', install);
+    bar.querySelector('.ptc-ip__close').addEventListener('click', function () {
+      snooze();
+      track('dismiss');
+      hideBar();
+    });
+
+    document.body.appendChild(bar);
+    return bar;
+  }
+
+  function showBar() {
+    if (shown || !allowedToShow()) return;
+    shown = true;
+    buildBar();
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { bar.setAttribute('data-open', '1'); });
+    });
+    track('shown');
+  }
+
+  function hideBar() {
+    if (!bar) return;
+    bar.removeAttribute('data-open');
+    setTimeout(function () { if (bar && bar.parentNode) bar.parentNode.removeChild(bar); bar = null; }, 400);
+    shown = false;
+  }
+
+  /* ---------- install / instructions ---------- */
+  function install() {
+    track('click_install');
+
+    if (deferredPrompt) {                    // Android Chrome, Edge, Samsung Internet
+      hideBar();
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function (choice) {
+        track(choice.outcome === 'accepted' ? 'accepted' : 'declined');
+        if (choice.outcome !== 'accepted') snooze();
+        deferredPrompt = null;
+      });
+      return;
+    }
+
+    openSheet();                             // iOS Safari + any browser with no install API
+  }
+
+  function openSheet() {
+    if (!sheet) buildSheet();
+    sheet.querySelector('[data-ptc-steps]').innerHTML = isIOS ? iosSteps() : androidSteps();
+    sheet.setAttribute('data-open', '1');
+    hideBar();
+    track('instructions_shown');
+  }
+
+  function closeSheet() {
+    if (sheet) sheet.removeAttribute('data-open');
+  }
+
+  function iosSteps() {
+    var share =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M12 16V4M12 4 8 8M12 4l4 4"/><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></svg>';
+    return '<li>Tap the <strong>Share</strong> button ' + share + ' in the Safari toolbar.</li>' +
+           '<li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>' +
+           '<li>Tap <strong>Add</strong> — the app appears on your home screen.</li>';
+  }
+
+  function androidSteps() {
+    return '<li>Tap the <strong>menu</strong> button (&#8942;) in your browser.</li>' +
+           '<li>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>' +
+           '<li>Confirm — the app appears on your home screen.</li>';
+  }
+
+  function buildSheet() {
+    sheet = document.createElement('div');
+    sheet.className = 'ptc-ip-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    sheet.setAttribute('aria-label', 'How to install ' + CONFIG.appName);
+    sheet.innerHTML =
+      '<div class="ptc-ip-sheet__panel">' +
+        '<h3>Install ' + CONFIG.appName + '</h3>' +
+        '<p>Takes 5 seconds. No download, no Play Store.</p>' +
+        '<ol data-ptc-steps></ol>' +
+        '<button type="button" class="ptc-ip-sheet__done">Got it</button>' +
+      '</div>';
+
+    sheet.addEventListener('click', function (e) {
+      if (e.target === sheet || e.target.classList.contains('ptc-ip-sheet__done')) closeSheet();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeSheet();
+    });
+    document.body.appendChild(sheet);
+  }
+
+  /* ---------- browser events ---------- */
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();           // stop Chrome's own mini-infobar
+    deferredPrompt = e;
+    if (allowedToShow() && timerDone) showBar();
+  });
+
+  window.addEventListener('appinstalled', function () {
+    set(LS.installed, '1');
+    deferredPrompt = null;
+    hideBar();
+    track('installed');
+  });
+
+  /* ---------- manual trigger: <button data-ptc-install>Install app</button> ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-ptc-install]') : null;
+    if (!t) return;
+    e.preventDefault();
+    install();
+  });
+
+  /* ---------- boot ---------- */
+  var timerDone = false;
+
+  function boot() {
+    bumpVisits();
+    if (isStandalone) { set(LS.installed, '1'); return; }
+
+    setTimeout(function () {
+      timerDone = true;
+      // Android: only show if we actually captured a real install event.
+      // iOS Safari: no event exists, so show the instructions path instead.
+      if (deferredPrompt || isIOSSafari) showBar();
+    }, CONFIG.debug ? 0 : CONFIG.showAfterSeconds * 1000);
+  }
+
+  /* public API — window.ptcInstall.show() / .reset() */
+  window.ptcInstall = {
+    show: function () { buildBar(); showBar(); },
+    prompt: install,
+    reset: function () {
+      [LS.visits, LS.dismissed, LS.dismissN, LS.installed].forEach(function (k) {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+    },
+    canInstall: function () { return !!deferredPrompt || isIOSSafari; }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+<!-- ================= /PTC App Install Prompt ================= -->
